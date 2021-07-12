@@ -10,10 +10,11 @@ edition = "2018"
 websocket = "0.26.2"
 serde_json = "1.0.64"
 serde = { version="1.0.125", features = ["derive"] }
-raylib = "3.5.0"
+#raylib = "3.5.0"
 colors-transform = "0.2.11"
 image = "0.23.14"
-idealos_schemas = {git = "https://github.com/joshmarinacci/idealos_schemas/", rev="53768c73"}
+#idealos_schemas = {git = "https://github.com/joshmarinacci/idealos_schemas/", branch="main"}
+idealos_schemas = { path = "../idealos_schemas/rust/idealos_schemas"}
 
 [dependencies.sdl2]
 version = "0.34.4"
