@@ -9,10 +9,11 @@ if it fails with an openssl error, install libssl-dev first (I had to do this on
 sudo apt-get install libssl-dev
 ```
 
-the same with SDL
+the same with SDL and it's many parts
 
 ```
-sudo apt-get install libsdl2-2.0
+sudo apt-get update
+sudo apt-get install libsdl2-image-2.0
 ```
 
 
