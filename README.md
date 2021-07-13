@@ -9,5 +9,11 @@ if it fails with an openssl error, install libssl-dev first (I had to do this on
 sudo apt-get install libssl-dev
 ```
 
+the same with SDL
+
+```
+sudo apt-get install libsdl2-2.0
+```
+
 
 Once it builds you'll need to already have the OS server running for this client to connect to it.
