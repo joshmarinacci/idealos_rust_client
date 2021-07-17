@@ -19,13 +19,14 @@ use sdl2::video::WindowContext;
 use sdl2::rect::Rect;
 use sdl2::mouse::{MouseButton, MouseState};
 use colors_transform::{Rgb, Color as CTColor};
+use crate::font::{FontInfo2, GlyphInfo};
 
 const SCALE: u32 = 3;
 const SCALEI: i32 = SCALE as i32;
 const BORDER:Insets = Insets {
     left: 1,
     right: 1,
-    top: 9,
+    top: 10,
     bottom: 1,
 };
 const RESIZE:Dimensions = Dimensions {
@@ -43,8 +44,7 @@ pub struct SDL2Backend<'a> {
     pub dragging:bool,
     pub resizing:bool,
     pub dragtarget:Option<String>,
-    // pub font:FontInfo<'a>,
-    // pub symbol_font:FontInfo<'a>,
+    pub font_info:FontInfo2,
 }
 
 
@@ -69,6 +69,7 @@ impl<'a> SDL2Backend<'a> {
                                 height: m.window.height as i32,
                                 owner: m.window.owner.clone(),
                                 window_type: m.window.window_type.clone(),
+                                title: "title".to_string()
                             };
                             self.init_window(&win);
                             // self.window_buffers.insert(win.id.clone(),win);
@@ -86,6 +87,7 @@ impl<'a> SDL2Backend<'a> {
                                     height: m.window.height as i32,
                                     owner: m.window.owner.clone(),
                                     window_type: m.window.window_type.clone(),
+                                    title: "title".to_string()
                                 };
 
                                 self.init_window(&child);
@@ -268,14 +270,14 @@ impl<'a> SDL2Backend<'a> {
                         "SIDEBAR" => {}
                         "CHILD" => {}
                         "PLAIN" => {
-                            self.canvas.set_draw_color(self.calc_window_border_color(win));
+                            // self.canvas.set_draw_color(self.calc_window_border_color(win));
+                            self.canvas.set_draw_color(Color::RED);
                             self.canvas.fill_rect(Rect::new(
                                 ((win.x-BORDER.left)*(SCALE as i32)) as i32,
                                 ((win.y-BORDER.top)*(SCALE as i32)) as i32,
                                 (BORDER.left+win.width+BORDER.right)as u32*SCALE as u32,
                                 (BORDER.top+win.height+BORDER.bottom)as u32*SCALE as u32));
-                            // self.font.draw_text_at(&*win.id, win.x,win.y-9,&Color::GREEN,  &mut self.canvas, SCALEI);
-                            // self.symbol_font.draw_text_at("b",win.x+win.width-7,win.y-8,&Color::BLACK, &mut self.canvas, SCALEI);
+                            draw_title(&mut self.canvas, &self.font_info, &win)
                         }
                         _ => {
                             println!("unknown window type {:?}",win.window_type);
@@ -488,4 +490,36 @@ fn lookup_color(name: &String) -> Color {
     }
 }
 
+fn draw_title(canvas:&mut WindowCanvas, font:&FontInfo2, win:&Window) {
+    let mut ww:i32 = 0;
+    for ch in win.title.bytes() {
+        let glyph_opt = lookup_char(font,ch);
+        if let Some(glyph) = glyph_opt {
+            canvas.set_draw_color(Color::RED);
+            let w:i32 = glyph.width as i32;
+            let h:i32 = glyph.height as i32;
+            let f = 1;
+            for i in glyph.left .. glyph.width - glyph.right as i32 {
+                for j in 0 .. glyph.height {
+                    let n:usize = (j * w + i) as usize;
+                    let alpha = glyph.data[n];
+                    if alpha > 0 {
+                        canvas.set_draw_color(Color::BLACK);
+                        canvas.fill_rect(Rect::new(
+                            (win.x + i - glyph.left +ww)*SCALEI as i32,
+                            (win.y-BORDER.top  + j + f)*SCALEI as i32,
+                            SCALE, SCALE));
+                    }
+                }
+            }
+            ww += (glyph.width - glyph.left - glyph.right) as i32;
+            ww += 1;
+        }
+    }
+}
 
+fn lookup_char(p0: &FontInfo2, ch:u8) -> Option<& GlyphInfo> {
+    return p0.glyphs.iter().find(|g| {
+        return g.id == (ch as u32)
+    })
+}

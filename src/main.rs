@@ -26,6 +26,7 @@ use sdl2::surface::Surface;
 use sdl2::rect::Rect;
 use serde_json::{json};
 use idealos_schemas::general::{ScreenStart_name, ScreenStart};
+use crate::font::load_font2;
 
 mod messages;
 mod window;
@@ -35,9 +36,11 @@ mod backend;
 mod sdl2backend;
 mod common;
 mod fontinfo;
+mod font;
 
 
 pub fn main() -> Result<(),String> {
+
     let mut windows:HashMap<String,Window> = HashMap::new();
 
 
@@ -106,14 +109,6 @@ pub fn main() -> Result<(),String> {
     // let cursor = Cursor::from_surface(big_surf, 0, 0)?;
     // cursor.set();
 
-    // let main_font = load_font("../../src/clients/fonts/idealos_font@1.png",
-    //                           "../../src/clients/fonts/idealos_font@1.json",
-    //                           &creator)?;
-    //
-    // let symbol_font = load_font("../../src/clients/fonts/symbol_font@1.png",
-    //                             "../../src/clients/fonts/symbol_font@1.json",
-    //                             &creator)?;
-
     let mut backend = SDL2Backend {
         sdl_context: &sdl_context,
         active_window: None,
@@ -124,8 +119,7 @@ pub fn main() -> Result<(),String> {
         dragging: false,
         dragtarget: None,
         resizing: false,
-        // font: main_font,
-        // symbol_font: symbol_font,
+        font_info: load_font2("./test/font.json").unwrap(),
     };
     backend.start_loop(
         &mut windows,

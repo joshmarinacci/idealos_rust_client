@@ -38,6 +38,7 @@ pub struct Window {
     pub height:i32,
     pub owner:String,
     pub window_type:String,
+    pub title:String,
 }
 
 pub const WINDOW_TYPE_PLAIN:&str = "PLAIN";
@@ -53,6 +54,7 @@ impl Window {
             height: info.height,
             owner: info.owner.clone(),
             window_type: info.window_type.clone(),
+            title: "title".to_string()
         }
     }
     pub fn from_info2(info:&window_info) -> Window {
@@ -64,6 +66,7 @@ impl Window {
             height: info.height as i32,
             owner: info.owner.clone(),
             window_type: info.window_type.clone(),
+            title: "title".to_string()
         }
     }
 
