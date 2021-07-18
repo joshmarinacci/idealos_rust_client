@@ -28,7 +28,7 @@ use idealos_schemas::general::{ScreenStart_name, ScreenStart};
 use crate::font::load_font2;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::{VideoSubsystem, video, render};
+use sdl2::{VideoSubsystem, video, render, version};
 use std::time::Duration;
 
 mod messages;
@@ -45,6 +45,7 @@ pub fn main() -> Result<(),String> {
     let mut windows:HashMap<String,Window> = HashMap::new();
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
+    println!("verison is {}", sdl2::version::version());
     println!("current driver is {:}",video_subsystem.current_video_driver());
     let display_count = video_subsystem.num_video_displays()?;
     println!("display count {:}",display_count);
