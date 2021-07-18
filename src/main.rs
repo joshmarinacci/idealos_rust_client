@@ -19,13 +19,17 @@ use sdl2::pixels::PixelFormatEnum;
 use image::io::Reader as ImageReader;
 use sdl2::render::{BlendMode, TextureCreator, Texture};
 use image::RgbaImage;
-use sdl2::video::WindowContext;
+use sdl2::video::{WindowContext, DriverIterator, drivers};
 use sdl2::mouse::Cursor;
 use sdl2::surface::Surface;
 use sdl2::rect::Rect;
 use serde_json::{json};
 use idealos_schemas::general::{ScreenStart_name, ScreenStart};
 use crate::font::load_font2;
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2::{VideoSubsystem, video, render};
+use std::time::Duration;
 
 mod messages;
 mod window;
@@ -37,8 +41,54 @@ mod common;
 mod fontinfo;
 mod font;
 
-
 pub fn main() -> Result<(),String> {
+    let mut windows:HashMap<String,Window> = HashMap::new();
+    let sdl_context = sdl2::init()?;
+    let video_subsystem = sdl_context.video()?;
+    println!("current driver is {:}",video_subsystem.current_video_driver());
+    let display_count = video_subsystem.num_video_displays()?;
+    println!("display count {:}",display_count);
+    for d in drivers() {
+        println!("video driver {}",d);
+    }
+
+    for d in render::drivers() {
+        println!("render driver {:?}",d);
+    }
+
+    let window = video_subsystem
+        .window("rust-sdl2 demo: Video", 1024, 768)
+        .position_centered()
+        .opengl()
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let canvas_builder = window.into_canvas();
+    let mut canvas = canvas_builder.build().map_err(|e| e.to_string())?;
+    let creator = canvas.texture_creator();
+
+    let mut event_pump = sdl_context.event_pump()?;
+
+    'done:loop {
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => {
+                    println!("quitting");
+                    break 'done;
+                },
+                _ => {}
+            }
+        }
+        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+    }
+    println!("SDL thread is ending");
+    Ok(())
+}
+pub fn main2() -> Result<(),String> {
 
     let mut windows:HashMap<String,Window> = HashMap::new();
 
