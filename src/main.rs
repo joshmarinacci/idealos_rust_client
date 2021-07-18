@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::sync::mpsc::{channel};
-use std::thread;
+use std::sync::mpsc::{channel, Sender, Receiver};
+use std::{thread, env};
 
 use websocket::{OwnedMessage};
 use websocket::ClientBuilder;
@@ -42,7 +42,10 @@ mod fontinfo;
 mod font;
 
 pub fn main() -> Result<(),String> {
-    let mut windows:HashMap<String,Window> = HashMap::new();
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", args);
+
+
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
     println!("verison is {}", sdl2::version::version());
@@ -68,27 +71,100 @@ pub fn main() -> Result<(),String> {
     let mut canvas = canvas_builder.build().map_err(|e| e.to_string())?;
     let creator = canvas.texture_creator();
 
-    let mut event_pump = sdl_context.event_pump()?;
+    let mut windows:HashMap<String,Window> = HashMap::new();
 
-    'done:loop {
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => {
-                    println!("quitting");
-                    break 'done;
-                },
-                _ => {}
-            }
-        }
-        ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
-    }
+    let mut backend = SDL2Backend {
+        sdl_context: &sdl_context,
+        active_window: None,
+        canvas:canvas,
+        creator: &creator,
+        window_buffers: Default::default(),
+        window_order: vec![],
+        dragging: false,
+        dragtarget: None,
+        resizing: false,
+        font_info: load_font2("./test/font.json").unwrap(),
+    };
+
+    //channel to talk to server sender thread
+    let (server_out_receive, server_out_send) = channel();
+    //channel to connect server receiver thread and render loop
+    let (render_loop_send, render_loop_receive) = channel::<RenderMessage>();
+
+    let r2 = server_out_receive.clone();
+    let rr2 = render_loop_send.clone();
+    // let name  = "ws://127.0.0.1:8081";
+    let name = args[1].clone();
+
+    let receive_loop = thread::spawn(move || {
+        start_connection(&name, r2, rr2, server_out_send);
+    });
+
+    backend.start_loop(
+        &mut windows,
+        &render_loop_receive,
+        &server_out_receive.clone()
+    );
+
+
+
+    // let mut event_pump = sdl_context.event_pump()?;
+    //
+    // 'done:loop {
+    //     for event in event_pump.poll_iter() {
+    //         match event {
+    //             Event::Quit { .. }
+    //             | Event::KeyDown {
+    //                 keycode: Some(Keycode::Escape),
+    //                 ..
+    //             } => {
+    //                 println!("quitting");
+    //                 break 'done;
+    //             },
+    //             _ => {}
+    //         }
+    //     }
+    //     ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
+    // }
     println!("SDL thread is ending");
     Ok(())
 }
+
+fn start_connection(name:&str, server_out_receive: Sender<OwnedMessage>, render_loop_send: Sender<RenderMessage>, server_out_send: Receiver<OwnedMessage>) {
+    println!("connecting to {}",name);
+    let mut client = ClientBuilder::new(name)
+        .unwrap()
+        .connect_insecure()
+        .unwrap();
+
+    println!("we are connected now!");
+    //websocket connection
+    let (mut server_in, mut server_out) = client.split().unwrap();
+    //loop for receiving
+    let sor = server_out_receive.clone();
+    let receive_loop = thread::spawn(move || {
+        process_incoming(&mut server_in, &sor, &render_loop_send);
+    });
+
+    //loop for sending
+    let send_loop = thread::spawn(move || {
+        process_outgoing(&server_out_send, &mut server_out);
+    });
+
+    //send the initial connection message
+    let message = OwnedMessage::Text(json!(ScreenStart{
+        type_: ScreenStart_name.to_string(),
+    }).to_string());
+    match server_out_receive.send(message) {
+        Ok(()) => (),
+        Err(e) => {
+            println!("error sending: {:?}", e);
+        }
+    }
+
+    println!("Waiting for child threads to exit");
+}
+
 pub fn main2() -> Result<(),String> {
 
     let mut windows:HashMap<String,Window> = HashMap::new();
