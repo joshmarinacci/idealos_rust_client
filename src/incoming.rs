@@ -14,7 +14,6 @@ use crate::messages::RenderMessage::Connected;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Error;
-use sdl2::gfx::imagefilter::sub;
 
 
 fn parse_message(renderloop_send:&Sender<RenderMessage>, txt:String) -> Result<()>{

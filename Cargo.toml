@@ -19,4 +19,5 @@ idealos_schemas = {git = "https://github.com/joshmarinacci/idealos_schemas/", br
 [dependencies.sdl2]
 version = "0.34.4"
 default-features = false
-features = ["ttf","image","gfx"]
+# features = ["ttf","image","gfx"]
+features = []

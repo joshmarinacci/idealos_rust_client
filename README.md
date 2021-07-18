@@ -18,5 +18,4 @@ sudo apt-get install libsdl2-2.0-0 libsdl2-dev libsdl2-gfx-dev libsdl2-image-dev
 this will pull in a *lot* of stuff.
 
 
-
 Once it builds you'll need to already have the OS server running for this client to connect to it.
