@@ -222,18 +222,6 @@ pub fn main2() -> Result<(),String> {
     let mut canvas = canvas_builder.build().map_err(|e| e.to_string())?;
     let creator = canvas.texture_creator();
 
-    //load original image into small surface
-    // let small_surf = Surface::from_file("../../resources/cursor.png")?;
-    // let small_size = Rect::new(0, 0, small_surf.width(), small_surf.height());
-
-    // create bigger surface
-    // let mut big_surf = Surface::new(small_size.width()*4, small_size.height()*4, small_surf.pixel_format_enum())?;
-    // let big_size = Rect::new(0, 0, big_surf.width(), big_surf.height());
-    //copy small to big
-    // small_surf.blit_scaled(small_size, &mut big_surf, big_size);
-    //turn into a cursor
-    // let cursor = Cursor::from_surface(big_surf, 0, 0)?;
-    // cursor.set();
 
     let mut backend = SDL2Backend {
         sdl_context: &sdl_context,

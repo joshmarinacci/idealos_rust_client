@@ -12,7 +12,7 @@ use crate::fontinfo::FontInfo;
 use sdl2::event::Event;
 use sdl2::keyboard::{Keycode, Mod};
 use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::render::{WindowCanvas, Texture, TextureCreator};
+use sdl2::render::{WindowCanvas, Texture, TextureCreator, Canvas, RenderTarget};
 use sdl2::Sdl;
 use crate::common::send_refresh_all_windows_request;
 use sdl2::video::WindowContext;
@@ -20,6 +20,7 @@ use sdl2::rect::Rect;
 use sdl2::mouse::{MouseButton, MouseState};
 use colors_transform::{Rgb, Color as CTColor};
 use crate::font::{FontInfo2, GlyphInfo};
+use sdl2::surface::Surface;
 
 const SCALE: u32 = 3;
 const SCALEI: i32 = SCALE as i32;
@@ -247,6 +248,8 @@ impl<'a> SDL2Backend<'a> {
                                          output,
             );
             self.draw_windows(windows);
+            self.draw_cursor(&event_pump.mouse_state());
+            self.canvas.present();
             ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
         }
         println!("SDL thread is ending");
@@ -294,7 +297,6 @@ impl<'a> SDL2Backend<'a> {
             }
         }
         // self.font.draw_text_at("idealos", 150,0,&Color::GREEN, &mut self.canvas, SCALEI);
-        self.canvas.present();
     }
     fn process_keydown(&self, keycode: Option<Keycode>,  keymod:Mod, windows:&mut HashMap<String,Window>, output: &Sender<OwnedMessage>) {
         if let Some(keycode) = keycode {
@@ -461,6 +463,11 @@ impl<'a> SDL2Backend<'a> {
             self.window_order.push(id)
         }
     }
+    fn draw_cursor(&mut self, mouse: &MouseState) {
+        if let Some(cursor_glyph) = lookup_char(&self.font_info, 1) {
+            draw_glyph(&mut self.canvas, cursor_glyph, mouse.x()/SCALEI, mouse.y()/SCALEI);
+        }
+    }
 }
 
 fn lookup_color(name: &String) -> Color {
@@ -490,35 +497,40 @@ fn lookup_color(name: &String) -> Color {
     }
 }
 
-fn draw_title(canvas:&mut WindowCanvas, font:&FontInfo2, win:&Window) {
+pub fn draw_title(canvas:&mut WindowCanvas, font:&FontInfo2, win:&Window) {
     let mut ww:i32 = 0;
     for ch in win.title.bytes() {
         let glyph_opt = lookup_char(font,ch);
         if let Some(glyph) = glyph_opt {
             canvas.set_draw_color(Color::RED);
-            let w:i32 = glyph.width as i32;
-            let h:i32 = glyph.height as i32;
-            let f = 1;
-            for i in glyph.left .. glyph.width - glyph.right as i32 {
-                for j in 0 .. glyph.height {
-                    let n:usize = (j * w + i) as usize;
-                    let alpha = glyph.data[n];
-                    if alpha > 0 {
-                        canvas.set_draw_color(Color::BLACK);
-                        canvas.fill_rect(Rect::new(
-                            (win.x + i - glyph.left +ww)*SCALEI as i32,
-                            (win.y-BORDER.top  + j + f)*SCALEI as i32,
-                            SCALE, SCALE));
-                    }
-                }
-            }
+            draw_glyph(canvas,glyph,win.x- glyph.left +ww,win.y-BORDER.top);
             ww += (glyph.width - glyph.left - glyph.right) as i32;
             ww += 1;
         }
     }
 }
 
-fn lookup_char(p0: &FontInfo2, ch:u8) -> Option<& GlyphInfo> {
+pub fn draw_glyph(canvas:&mut WindowCanvas, glyph: &GlyphInfo, x: i32, y: i32) {
+    let w:i32 = glyph.width as i32;
+    let h:i32 = glyph.height as i32;
+    let f = 1;
+    for i in glyph.left .. glyph.width - glyph.right as i32 {
+        for j in 0 .. glyph.height {
+            let n:usize = (j * w + i) as usize;
+            let alpha = glyph.data[n];
+            if alpha > 0 {
+                canvas.set_draw_color(Color::BLACK);
+                canvas.fill_rect(Rect::new(
+                    (i + x)*SCALEI as i32,
+                    (y + j + f)*SCALEI as i32,
+                    SCALE, SCALE
+                ));
+            }
+        }
+    }
+}
+
+pub fn lookup_char(p0: &FontInfo2, ch:u8) -> Option<& GlyphInfo> {
     return p0.glyphs.iter().find(|g| {
         return g.id == (ch as u32)
     })
