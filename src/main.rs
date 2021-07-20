@@ -86,6 +86,8 @@ pub fn main() -> Result<(),String> {
         font_info: load_font2("./test/font.json").unwrap(),
     };
 
+    sdl_context.mouse().show_cursor(false);
+
     //channel to talk to server sender thread
     let (server_out_receive, server_out_send) = channel();
     //channel to connect server receiver thread and render loop
