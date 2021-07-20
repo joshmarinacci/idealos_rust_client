@@ -22,7 +22,7 @@ use colors_transform::{Rgb, Color as CTColor};
 use crate::font::{FontInfo2, GlyphInfo};
 use sdl2::surface::Surface;
 
-const SCALE: u32 = 3;
+const SCALE: u32 = 2;
 const SCALEI: i32 = SCALE as i32;
 const BORDER:Insets = Insets {
     left: 1,

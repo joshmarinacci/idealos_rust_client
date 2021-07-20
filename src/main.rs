@@ -61,7 +61,7 @@ pub fn main() -> Result<(),String> {
     }
 
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 1024, 768)
+        .window("rust-sdl2 demo: Video", 512*2, 320*2)
         .position_centered()
         .opengl()
         .build()
