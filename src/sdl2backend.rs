@@ -304,20 +304,26 @@ impl<'a> SDL2Backend<'a> {
                 Keycode => {
                     if let Some(id) = &self.active_window {
                         if let Some(win) = windows.get_mut(id) {
-                            // println!("got a message {:?}",keycode.name());
-                            // println!("mod is {:?}",keymod);
+                            println!("got a message {:?}",keycode.name());
+                            println!("mod is {:?}",keymod);
                             let mut key = keycode.name().to_lowercase();
                             let mut name = keycode.name();
                             let shift = (keymod == Mod::LSHIFTMOD || keymod == Mod::RSHIFTMOD);
                             if(shift) {
                                 key = keycode.name().to_uppercase();
                             }
+                            let control = (keymod == Mod::LCTRLMOD || keymod == Mod::RCTRLMOD);
                             let mut code = format!("{}{}","Key",name);
                             if keycode.name().eq("Left") { code = "ArrowLeft".to_string(); }
                             if keycode.name().eq("Right") { code = "ArrowRight".to_string(); }
                             if keycode.name().eq("Up") { code = "ArrowUp".to_string(); }
                             if keycode.name().eq("Down") { code = "ArrowDown".to_string(); }
-                            // println!("code is {}",code);
+                            if keycode.name().eq("Backspace") { code = "Backspace".to_string(); }
+                            if keycode.name().eq("Space") {
+                                code = "Space".to_string();
+                                key = " ".to_string();
+                            }
+                            println!("code is {} key is {}",code, key);
                             //keycode.name is Left
                             let msg = KeyboardDown {
                                 type_: KeyboardDown_name.to_string(),
@@ -326,7 +332,7 @@ impl<'a> SDL2Backend<'a> {
                                 shift:shift,
                                 alt:false,
                                 meta:false,
-                                control:false,
+                                control,
                                 app:win.owner.to_string(),
                                 target: win.owner.clone(),
                                 window: win.id.to_string()
