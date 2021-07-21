@@ -307,13 +307,21 @@ impl<'a> SDL2Backend<'a> {
                             // println!("got a message {:?}",keycode.name());
                             // println!("mod is {:?}",keymod);
                             let mut key = keycode.name().to_lowercase();
+                            let mut name = keycode.name();
                             let shift = (keymod == Mod::LSHIFTMOD || keymod == Mod::RSHIFTMOD);
                             if(shift) {
                                 key = keycode.name().to_uppercase();
                             }
+                            let mut code = format!("{}{}","Key",name);
+                            if keycode.name().eq("Left") { code = "ArrowLeft".to_string(); }
+                            if keycode.name().eq("Right") { code = "ArrowRight".to_string(); }
+                            if keycode.name().eq("Up") { code = "ArrowUp".to_string(); }
+                            if keycode.name().eq("Down") { code = "ArrowDown".to_string(); }
+                            // println!("code is {}",code);
+                            //keycode.name is Left
                             let msg = KeyboardDown {
                                 type_: KeyboardDown_name.to_string(),
-                                code: format!("{}{}","Key",keycode.name()),
+                                code: code,
                                 key:key,
                                 shift:shift,
                                 alt:false,
