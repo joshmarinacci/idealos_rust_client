@@ -108,26 +108,6 @@ pub fn main() -> Result<(),String> {
         &server_out_receive.clone()
     );
 
-
-
-    // let mut event_pump = sdl_context.event_pump()?;
-    //
-    // 'done:loop {
-    //     for event in event_pump.poll_iter() {
-    //         match event {
-    //             Event::Quit { .. }
-    //             | Event::KeyDown {
-    //                 keycode: Some(Keycode::Escape),
-    //                 ..
-    //             } => {
-    //                 println!("quitting");
-    //                 break 'done;
-    //             },
-    //             _ => {}
-    //         }
-    //     }
-    //     ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
-    // }
     println!("SDL thread is ending");
     Ok(())
 }
