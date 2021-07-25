@@ -157,10 +157,27 @@ impl<'a> SDL2Backend<'a> {
                                             for j in 0..m.height {
                                                 let n:usize = ((j * m.width + i) * 4) as usize;
                                                 let alpha = m.pixels[n+3];
-                                                if alpha > 0 {
-                                                    let col = Color::RGBA(m.pixels[n + 0], m.pixels[n + 1], m.pixels[n + 2], m.pixels[n + 3]);
-                                                    texture_canvas.set_draw_color(col);
-                                                    texture_canvas.fill_rect(Rect::new((m.x + i) as i32, (m.y + j) as i32, 1, 1));
+                                                if m.depth == 8 {
+                                                    //if 8bit depth then it's a real RGBA image
+                                                    if alpha > 0 {
+                                                        let col = Color::RGBA(m.pixels[n + 0], m.pixels[n + 1], m.pixels[n + 2], m.pixels[n + 3]);
+                                                        texture_canvas.set_draw_color(col);
+                                                        texture_canvas.fill_rect(Rect::new((m.x + i) as i32, (m.y + j) as i32, 1, 1));
+                                                    }
+                                                } else if m.depth == 1 {
+                                                    //if 1bit depth and a color is set, then draw with that color wherever not transparent (alpha > 0)
+                                                    if alpha > 0 {
+                                                        let col = lookup_color(&m.color);
+                                                        texture_canvas.set_draw_color(col);
+                                                        texture_canvas.fill_rect(Rect::new((m.x + i) as i32, (m.y + j) as i32, 1, 1));
+                                                    }
+                                                    //else assume it's just black wherever not transparent (alpha > 0)
+                                                } else {
+                                                    if alpha > 0 {
+                                                        let col = Color::RGBA(m.pixels[n + 0], m.pixels[n + 1], m.pixels[n + 2], m.pixels[n + 3]);
+                                                        texture_canvas.set_draw_color(col);
+                                                        texture_canvas.fill_rect(Rect::new((m.x + i) as i32, (m.y + j) as i32, 1, 1));
+                                                    }
                                                 }
                                             }
                                         }

@@ -73,10 +73,13 @@ pub enum any_graphics_message {
     },
     MAKE_DrawImage_name {
         window:String,
+        color:String,
         x:i64,
         y:i64,
         width:i64,
         height:i64,
+        depth:i64,
+        channels:i64,
         pixels:Vec<u8>,
     },
 }

@@ -56,14 +56,17 @@ fn parse_message(renderloop_send:&Sender<RenderMessage>, txt:String) -> Result<(
                                 height: *height
                             }));
                         }
-                        any_graphics_message::MAKE_DrawImage_name { window, x, y, width, height, pixels } => {
+                        any_graphics_message::MAKE_DrawImage_name { window, color, x, y, width, height, depth, channels, pixels } => {
                             renderloop_send.send(RenderMessage::DrawImage(DrawImage{
                                 type_: "".to_string(),
                                 window: window.to_string(),
+                                color: color.to_string(),
                                 x: *x,
                                 y: *y,
                                 width: *width,
                                 height: *height,
+                                depth: *depth,
+                                channels: *channels,
                                 pixels: pixels.to_vec()
                             }));
                         }

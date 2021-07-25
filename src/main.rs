@@ -43,7 +43,10 @@ mod font;
 
 pub fn main() -> Result<(),String> {
     let args: Vec<String> = env::args().collect();
-    println!("{:?}", args);
+    println!("args: {:?}", args);
+    if args.len() < 2 {
+        panic!("missing connection argument: cargo run ws://127.0.0.1:8081/");
+    }
 
 
     let sdl_context = sdl2::init()?;
