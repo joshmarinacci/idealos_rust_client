@@ -453,8 +453,8 @@ impl<'a> SDL2Backend<'a> {
 
         if let MouseButton::Left = mouse_btn {
             let pt = Point { x: x / SCALE as i32, y: y / SCALE as i32, };
-            if let Some(id) = &self.active_window {
-                if let Some(win) = windows.get(id) {
+            for win in windows.values() {
+                if win.contains(&pt) {
                     let msg = MouseUp {
                         type_: MouseUp_name.to_string(),
                         x: ((pt.x) - win.x) as i64,
@@ -463,6 +463,7 @@ impl<'a> SDL2Backend<'a> {
                         window: win.id.to_string(),
                     };
                     output.send(OwnedMessage::Text(json!(msg).to_string()));
+                    break;
                 }
             }
         }
