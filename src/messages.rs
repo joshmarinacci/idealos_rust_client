@@ -98,6 +98,7 @@ pub enum RenderMessage {
     Connected(Connected),
     WindowList(window_list_message),
     OpenWindow(WindowOpenDisplay),
+    WindowSetSize(WindowSetSizeRequest),
     CloseWindow(CloseWindowScreen),
     CreateChildWindow(create_child_window_display),
     CloseChildWindow(close_child_window_display),
@@ -271,3 +272,13 @@ pub struct WindowSetSize {
     pub height:i64,
 }
 
+pub const WindowSetSizeRequest_message: &str = "window-set-size-request";
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WindowSetSizeRequest {
+    #[serde(rename = "type")]
+    pub type_:String,
+    pub app:String,
+    pub window:String,
+    pub width:i64,
+    pub height:i64,
+}

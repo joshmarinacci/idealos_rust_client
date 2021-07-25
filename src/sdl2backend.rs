@@ -77,6 +77,13 @@ impl<'a> SDL2Backend<'a> {
                             windows.insert(m.window.id.clone(), win);
                             // println!("window count is {}", windows.len());
                         }
+                        RenderMessage::WindowSetSize(m) => {
+                            if let Some(win) = windows.get_mut(m.window.as_str()) {
+                                win.width = m.width as i32;
+                                win.height = m.height as i32;
+                                self.resize_window(win);
+                            }
+                        }
                         RenderMessage::CreateChildWindow(m) => {
                             // println!("creating a child window");
                             if let Some(win) = windows.get_mut(&m.parent) {
