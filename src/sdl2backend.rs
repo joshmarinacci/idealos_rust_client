@@ -84,6 +84,23 @@ impl<'a> SDL2Backend<'a> {
                                 self.resize_window(win);
                             }
                         }
+                        RenderMessage::WindowSetPosition(m) => {
+                            if let Some(win) = windows.get_mut(m.window.as_str()) {
+                                win.x = m.x as i32;
+                                win.y = m.y as i32;
+
+                                let pt = Point { x: m.x as i32, y: m.y as i32 };
+                                let move_msg = WindowSetPosition {
+                                    type_: WindowSetPosition_message.to_string(),
+                                    app: String::from("rust-client"),
+                                    window: win.id.to_string(),
+                                    x: pt.x as i64,
+                                    y: pt.y as i64,
+                                };
+                                // println!("setting window position {:?}",move_msg);
+                                output.send(OwnedMessage::Text(json!(move_msg).to_string()));
+                            }
+                        }
                         RenderMessage::CreateChildWindow(m) => {
                             // println!("creating a child window");
                             if let Some(win) = windows.get_mut(&m.parent) {

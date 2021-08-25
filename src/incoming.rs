@@ -6,7 +6,7 @@ use websocket::receiver::Reader;
 use std::net::TcpStream;
 use std::sync::mpsc::Sender;
 use websocket::OwnedMessage;
-use crate::messages::{RenderMessage, CloseWindowScreen, window_list_message, group_message, any_graphics_message, WindowSetSizeRequest, WindowSetSizeRequest_message};
+use crate::messages::{RenderMessage, CloseWindowScreen, window_list_message, group_message, any_graphics_message, WindowSetSizeRequest, WindowSetSizeRequest_message, WindowSetPosition_message, WindowSetPositionRequest, WindowSetPositionRequest_message};
 use idealos_schemas::windows::{WindowOpenDisplay_name, WindowOpenDisplay, create_child_window_display_name, create_child_window_display, close_child_window_display_name, close_child_window_display};
 use idealos_schemas::graphics::*;
 use idealos_schemas::general::{Connected_name};
@@ -75,6 +75,11 @@ fn parse_message(renderloop_send:&Sender<RenderMessage>, txt:String) -> Result<(
                 return Ok(())
             }
 
+            if msg_type.eq(WindowSetPositionRequest_message) {
+                let msg:WindowSetPositionRequest = serde_json::from_str(txt.as_str())?;
+                renderloop_send.send(RenderMessage::WindowSetPosition(msg));
+                return Ok(())
+            }
             if msg_type.eq(WindowSetSizeRequest_message) {
                 let msg:WindowSetSizeRequest = serde_json::from_str(txt.as_str())?;
                 renderloop_send.send(RenderMessage::WindowSetSize(msg));

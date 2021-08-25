@@ -30,6 +30,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::{VideoSubsystem, video, render, version};
 use std::time::Duration;
+use crate::messages::{SetScreenSize, SetScreenSize_message};
 
 mod messages;
 mod window;
@@ -63,8 +64,10 @@ pub fn main() -> Result<(),String> {
         println!("render driver {:?}",d);
     }
 
+    let width = 512;
+    let height = 320;
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 512*2, 320*2)
+        .window("rust-sdl2 demo: Video", width*2, height*2)
         .position_centered()
         .opengl()
         .build()
@@ -102,7 +105,7 @@ pub fn main() -> Result<(),String> {
     let name = args[1].clone();
 
     let receive_loop = thread::spawn(move || {
-        start_connection(&name, r2, rr2, server_out_send);
+        start_connection(&name, r2, rr2, server_out_send,width, height);
     });
 
     backend.start_loop(
@@ -115,7 +118,12 @@ pub fn main() -> Result<(),String> {
     Ok(())
 }
 
-fn start_connection(name:&str, server_out_receive: Sender<OwnedMessage>, render_loop_send: Sender<RenderMessage>, server_out_send: Receiver<OwnedMessage>) {
+fn start_connection(name:&str,
+                    server_out_receive: Sender<OwnedMessage>,
+                    render_loop_send: Sender<RenderMessage>,
+                    server_out_send: Receiver<OwnedMessage>,
+                    width: u32, height: u32
+) {
     println!("connecting to {}",name);
     let mut client = ClientBuilder::new(name)
         .unwrap()
@@ -141,6 +149,18 @@ fn start_connection(name:&str, server_out_receive: Sender<OwnedMessage>, render_
         type_: ScreenStart_name.to_string(),
     }).to_string());
     match server_out_receive.send(message) {
+        Ok(()) => (),
+        Err(e) => {
+            println!("error sending: {:?}", e);
+        }
+    }
+
+    let msg2 = OwnedMessage::Text(json!(SetScreenSize{
+        type_:SetScreenSize_message.to_string(),
+        width:width as i64,
+        height:height as i64,
+    }).to_string());
+    match server_out_receive.send(msg2) {
         Ok(()) => (),
         Err(e) => {
             println!("error sending: {:?}", e);

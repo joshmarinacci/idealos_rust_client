@@ -99,6 +99,7 @@ pub enum RenderMessage {
     WindowList(window_list_message),
     OpenWindow(WindowOpenDisplay),
     WindowSetSize(WindowSetSizeRequest),
+    WindowSetPosition(WindowSetPositionRequest),
     CloseWindow(CloseWindowScreen),
     CreateChildWindow(create_child_window_display),
     CloseChildWindow(close_child_window_display),
@@ -260,6 +261,16 @@ pub struct WindowSetPosition {
     pub y:i64,
 }
 
+pub const WindowSetPositionRequest_message: &str = "window-set-position-request";
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WindowSetPositionRequest {
+    #[serde(rename = "type")]
+    pub type_:String,
+    pub window:String,
+    pub x:i64,
+    pub y:i64,
+}
+
 
 pub const WindowSetSize_message: &str = "window-set-size";
 #[derive(Serialize, Deserialize, Debug)]
@@ -277,8 +288,16 @@ pub const WindowSetSizeRequest_message: &str = "window-set-size-request";
 pub struct WindowSetSizeRequest {
     #[serde(rename = "type")]
     pub type_:String,
-    pub app:String,
     pub window:String,
+    pub width:i64,
+    pub height:i64,
+}
+
+pub const SetScreenSize_message: &str = "set_screen_size";
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SetScreenSize {
+    #[serde(rename = "type")]
+    pub type_:String,
     pub width:i64,
     pub height:i64,
 }
