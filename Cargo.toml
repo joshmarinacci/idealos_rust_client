@@ -15,6 +15,7 @@ colors-transform = "0.2.11"
 image = "0.23.14"
 idealos_schemas = {git = "https://github.com/joshmarinacci/idealos_schemas/", branch="main"}
 #idealos_schemas = { path = "../idealos_schemas/rust/idealos_schemas"}
+structopt = "0.3.22"
 
 [dependencies.sdl2]
 version = "0.34.5"

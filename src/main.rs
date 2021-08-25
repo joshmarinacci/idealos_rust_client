@@ -31,6 +31,7 @@ use sdl2::keyboard::Keycode;
 use sdl2::{VideoSubsystem, video, render, version};
 use std::time::Duration;
 use crate::messages::{SetScreenSize, SetScreenSize_message};
+use structopt::StructOpt;
 
 mod messages;
 mod window;
@@ -42,13 +43,21 @@ mod common;
 mod fontinfo;
 mod font;
 
+#[derive(StructOpt)]
+#[structopt(name = "example", about="example rust client usage")]
+struct Cli {
+    server:String,
+    #[structopt(short, long)]
+    fullscreen:bool,
+    #[structopt(long=("--scale"),default_value="1")]
+    scale: u32,
+    #[structopt(long=("--width"),default_value="0")]
+    width:u32,
+    #[structopt(long=("--height"),default_value="0")]
+    height:u32,
+}
 pub fn main() -> Result<(),String> {
-    let args: Vec<String> = env::args().collect();
-    println!("args: {:?}", args);
-    if args.len() < 2 {
-        panic!("missing connection argument: cargo run ws://127.0.0.1:8081/");
-    }
-
+    let args:Cli = Cli::from_args();
 
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -64,14 +73,42 @@ pub fn main() -> Result<(),String> {
         println!("render driver {:?}",d);
     }
 
-    let width = 512;
-    let height = 320;
-    let window = video_subsystem
-        .window("rust-sdl2 demo: Video", width*2, height*2)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let display_mode = video_subsystem.current_display_mode(0).unwrap();
+    println!("Display mode is {:?}", display_mode);
+
+    let mut rwidth:u32 = 512;
+    let mut rheight:u32 = 320;
+    let mut vwidth:u32 = 512;
+    let mut vheight:u32 = 320;
+    if(args.width > 0) {
+        vwidth = args.width;
+        rwidth = args.width*args.scale;
+    }
+    if(args.height > 0) {
+        vheight = args.height;
+        rheight = args.height*args.scale;
+    }
+    if(args.fullscreen) {
+        rwidth = display_mode.w as u32;
+        rheight = display_mode.h as u32;
+        vwidth = rwidth/args.scale;
+        vheight = rheight/args.scale;
+    }
+
+    println!("virtual size {} {}", vwidth, vheight);
+    println!("real size {} {}",rwidth,rheight);
+
+    let mut inter1 = video_subsystem.window("rust-sdl2 demo: Video", rwidth, rheight);
+
+    let inter2 = if args.fullscreen {
+        inter1.fullscreen()
+    } else {
+        inter1.position_centered()
+    };
+    let window = inter2
+            .opengl()
+            .build()
+            .map_err(|e| e.to_string())?;
 
     let canvas_builder = window.into_canvas();
     let mut canvas = canvas_builder.build().map_err(|e| e.to_string())?;
@@ -90,6 +127,8 @@ pub fn main() -> Result<(),String> {
         dragtarget: None,
         resizing: false,
         font_info: load_font2("./test/font.json").unwrap(),
+        scale:args.scale,
+        iscale: args.scale as i32,
     };
 
     sdl_context.mouse().show_cursor(false);
@@ -101,11 +140,9 @@ pub fn main() -> Result<(),String> {
 
     let r2 = server_out_receive.clone();
     let rr2 = render_loop_send.clone();
-    // let name  = "ws://127.0.0.1:8081";
-    let name = args[1].clone();
 
     let receive_loop = thread::spawn(move || {
-        start_connection(&name, r2, rr2, server_out_send,width, height);
+        start_connection(&args.server.clone(), r2, rr2, server_out_send, vwidth, vheight);
     });
 
     backend.start_loop(
@@ -168,93 +205,6 @@ fn start_connection(name:&str,
     }
 
     println!("Waiting for child threads to exit");
-}
-
-pub fn main2() -> Result<(),String> {
-
-    let mut windows:HashMap<String,Window> = HashMap::new();
-
-
-    let name  = "ws://127.0.0.1:8081";
-    let mut client = ClientBuilder::new(name)
-        .unwrap()
-        .connect_insecure()
-        .unwrap();
-
-    println!("we are connected now!");
-
-    //websocket connection
-    let (mut server_in, mut server_out) = client.split().unwrap();
-
-    //channel to talk to server sender thread
-    let (server_out_receive, server_out_send) = channel();
-
-    //channel to connect server receiver thread and render loop
-    let (render_loop_send, render_loop_receive) = channel::<RenderMessage>();
-
-    //loop for receiving
-    let server_out_receive_2 = server_out_receive.clone();
-    let receive_loop = thread::spawn(move || {
-        process_incoming(&mut server_in, &server_out_receive_2, &render_loop_send);
-    });
-
-    //loop for sending
-    let send_loop = thread::spawn(move || {
-        process_outgoing(&server_out_send, &mut server_out);
-    });
-
-    //send the initial connection message
-    let message = OwnedMessage::Text(json!(ScreenStart{
-        type_: ScreenStart_name.to_string(),
-    }).to_string());
-    match server_out_receive.send(message) {
-        Ok(()) => (),
-        Err(e) => {
-            println!("error sending: {:?}", e);
-        }
-    }
-
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
-    let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 1024, 768)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let canvas_builder = window.into_canvas();
-    let mut canvas = canvas_builder.build().map_err(|e| e.to_string())?;
-    let creator = canvas.texture_creator();
-
-
-    let mut backend = SDL2Backend {
-        sdl_context: &sdl_context,
-        active_window: None,
-        canvas:canvas,
-        creator: &creator,
-        window_buffers: Default::default(),
-        window_order: vec![],
-        dragging: false,
-        dragtarget: None,
-        resizing: false,
-        font_info: load_font2("./test/font.json").unwrap(),
-    };
-    backend.start_loop(
-        &mut windows,
-        &render_loop_receive,
-        &server_out_receive.clone()
-    );
-
-    //wait for the end
-    println!("Waiting for child threads to exit");
-
-    server_out_receive.send(OwnedMessage::Close(None));
-    let _ = send_loop.join();
-    let _ = receive_loop.join();
-
-    println!("Exited");
-    Ok(())
 }
 
 fn load_font<'a>(png_path: &str, json_path: &str, creator: &'a TextureCreator<WindowContext>) -> Result<FontInfo<'a>, String> {

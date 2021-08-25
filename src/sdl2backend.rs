@@ -22,8 +22,8 @@ use colors_transform::{Rgb, Color as CTColor};
 use crate::font::{FontInfo2, GlyphInfo};
 use sdl2::surface::Surface;
 
-const SCALE: u32 = 2;
-const SCALEI: i32 = SCALE as i32;
+// const SCALE: u32 = 1;
+// const SCALEI: i32 = SCALE as i32;
 const BORDER:Insets = Insets {
     left: 1,
     right: 1,
@@ -46,6 +46,8 @@ pub struct SDL2Backend<'a> {
     pub resizing:bool,
     pub dragtarget:Option<String>,
     pub font_info:FontInfo2,
+    pub scale:u32,
+    pub iscale:i32,
 }
 
 
@@ -82,6 +84,14 @@ impl<'a> SDL2Backend<'a> {
                                 win.width = m.width as i32;
                                 win.height = m.height as i32;
                                 self.resize_window(win);
+                                let size_msg = WindowSetSize {
+                                    type_: WindowSetSize_message.to_string(),
+                                    app: String::from("rust_client"),
+                                    window: win.id.to_string(),
+                                    width: win.width as i64,
+                                    height: win.height as i64,
+                                };
+                                output.send(OwnedMessage::Text(json!(size_msg).to_string()));
                             }
                         }
                         RenderMessage::WindowSetPosition(m) => {
@@ -317,21 +327,21 @@ impl<'a> SDL2Backend<'a> {
                             // self.canvas.set_draw_color(self.calc_window_border_color(win));
                             self.canvas.set_draw_color(Color::RED);
                             self.canvas.fill_rect(Rect::new(
-                                ((win.x-BORDER.left)*(SCALE as i32)) as i32,
-                                ((win.y-BORDER.top)*(SCALE as i32)) as i32,
-                                (BORDER.left+win.width+BORDER.right)as u32*SCALE as u32,
-                                (BORDER.top+win.height+BORDER.bottom)as u32*SCALE as u32));
-                            draw_title(&mut self.canvas, &self.font_info, &win)
+                                ((win.x-BORDER.left)*(self.scale as i32)) as i32,
+                                ((win.y-BORDER.top)*(self.scale as i32)) as i32,
+                                (BORDER.left+win.width+BORDER.right)as u32*self.scale,
+                                (BORDER.top+win.height+BORDER.bottom)as u32*self.scale));
+                            draw_title(&mut self.canvas, &self.font_info, &win, self.scale)
                         }
                         _ => {
                             println!("unknown window type {:?}",win.window_type);
                         }
                     }
                     //draw window texture
-                    let dst = Some(Rect::new((win.x as u32*SCALE) as i32,
-                                             (win.y as u32*SCALE) as i32,
-                                             (win.width as u32 * SCALE as u32) as u32,
-                                             (win.height as u32 * SCALE as u32) as u32
+                    let dst = Some(Rect::new((win.x * self.iscale) as i32,
+                                             (win.y * self.iscale) as i32,
+                                             (win.width as u32 * self.iscale as u32) as u32,
+                                             (win.height as u32 * self.iscale as u32) as u32
                     ));
                     self.canvas.copy(tex,None,dst);
                 }
@@ -391,7 +401,7 @@ impl<'a> SDL2Backend<'a> {
     fn process_mousedown(&mut self, x: i32, y: i32, mouse_btn: MouseButton, windows: &mut HashMap<String, Window>, output: &Sender<OwnedMessage>) {
         match mouse_btn {
             MouseButton::Left => {
-                let pt = Point { x: x / SCALE as i32, y: y / SCALE as i32, };
+                let pt = Point { x: x / self.iscale, y: y / self.iscale, };
                 for win in windows.values() {
                     if win.resize_contains(&pt, &RESIZE) {
                         self.resizing = true;
@@ -433,7 +443,7 @@ impl<'a> SDL2Backend<'a> {
         if self.dragging {
             if let Some(winid) = &self.dragtarget {
                 if let Some(win) = windows.get(winid) {
-                    let pt = Point { x: x / SCALE as i32, y: y / SCALE as i32, };
+                    let pt = Point { x: x / self.iscale, y: y / self.iscale, };
                     let move_msg = WindowSetPosition {
                         type_: WindowSetPosition_message.to_string(),
                         app: String::from("someappid"),
@@ -451,7 +461,7 @@ impl<'a> SDL2Backend<'a> {
         if self.resizing {
             if let Some(winid) = &self.dragtarget {
                 if let Some(win) = windows.get(winid) {
-                    let edge = Point { x: x / SCALE as i32, y: y / SCALE as i32, };
+                    let edge = Point { x: x / self.iscale, y: y / self.iscale };
                     let pos = Point { x: win.x, y: win.y };
                     let size_msg = WindowSetSize {
                         type_: WindowSetSize_message.to_string(),
@@ -469,7 +479,7 @@ impl<'a> SDL2Backend<'a> {
         }
 
         if let MouseButton::Left = mouse_btn {
-            let pt = Point { x: x / SCALE as i32, y: y / SCALE as i32, };
+            let pt = Point { x: x / self.iscale, y: y/ self.iscale };
             for win in windows.values() {
                 if win.contains(&pt) {
                     let msg = MouseUp {
@@ -498,16 +508,16 @@ impl<'a> SDL2Backend<'a> {
             if let Some(winid) = &self.dragtarget {
                 if let Some(win) = windows.get_mut(winid) {
                     // println!("dragging {} {} with {:?}", mouse_state.x(), mouse_state.y(), win.id);
-                    win.x = mouse_state.x()/SCALEI;
-                    win.y = mouse_state.y()/SCALEI;
+                    win.x = mouse_state.x()/self.iscale;
+                    win.y = mouse_state.y()/self.iscale;
                 }
             }
         }
         if self.resizing {
             if let Some(winid) = &self.dragtarget {
                 if let Some(win) = windows.get_mut(winid) {
-                    win.width = (mouse_state.x()/SCALEI) - win.x;
-                    win.height = (mouse_state.y()/SCALEI) - win.y;
+                    win.width = (mouse_state.x()/self.iscale) - win.x;
+                    win.height = (mouse_state.y()/self.iscale) - win.y;
                 }
             }
         }
@@ -521,7 +531,7 @@ impl<'a> SDL2Backend<'a> {
     }
     fn draw_cursor(&mut self, mouse: &MouseState) {
         if let Some(cursor_glyph) = lookup_char(&self.font_info, 1) {
-            draw_glyph(&mut self.canvas, cursor_glyph, mouse.x()/SCALEI, mouse.y()/SCALEI);
+            draw_glyph(&mut self.canvas, cursor_glyph, mouse.x()/self.iscale, mouse.y()/self.iscale, self.scale);
         }
     }
 }
@@ -553,20 +563,20 @@ fn lookup_color(name: &String) -> Color {
     }
 }
 
-pub fn draw_title(canvas:&mut WindowCanvas, font:&FontInfo2, win:&Window) {
+pub fn draw_title(canvas:&mut WindowCanvas, font:&FontInfo2, win:&Window, scale:u32) {
     let mut ww:i32 = 0;
     for ch in win.title.bytes() {
         let glyph_opt = lookup_char(font,ch);
         if let Some(glyph) = glyph_opt {
             canvas.set_draw_color(Color::RED);
-            draw_glyph(canvas,glyph,win.x- glyph.left +ww,win.y-BORDER.top);
+            draw_glyph(canvas,glyph,win.x- glyph.left +ww,win.y-BORDER.top, scale);
             ww += (glyph.width - glyph.left - glyph.right) as i32;
             ww += 1;
         }
     }
 }
 
-pub fn draw_glyph(canvas:&mut WindowCanvas, glyph: &GlyphInfo, x: i32, y: i32) {
+pub fn draw_glyph(canvas:&mut WindowCanvas, glyph: &GlyphInfo, x: i32, y: i32, scale:u32) {
     let w:i32 = glyph.width as i32;
     let h:i32 = glyph.height as i32;
     let f = 1;
@@ -577,9 +587,9 @@ pub fn draw_glyph(canvas:&mut WindowCanvas, glyph: &GlyphInfo, x: i32, y: i32) {
             if alpha > 0 {
                 canvas.set_draw_color(Color::BLACK);
                 canvas.fill_rect(Rect::new(
-                    (i + x)*SCALEI as i32,
-                    (y + j + f)*SCALEI as i32,
-                    SCALE, SCALE
+                    (i + x)*scale as i32,
+                    (y + j + f)*scale as i32,
+                    scale, scale
                 ));
             }
         }
